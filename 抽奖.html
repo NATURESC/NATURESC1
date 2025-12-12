@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>探探5周年大抽奖</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background: #ffb822;
+            background: linear-gradient(180deg, #ffcf4b 0%, #ff9a00 100%);
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: hidden;
+        }
+
+        /* 顶部标题 */
+        .header { text-align: center; margin-top: 30px; color: #d93600; }
+        .header h1 { font-size: 24px; font-weight: bold; border: 2px solid #333; display: inline-block; padding: 5px 20px; margin-bottom: 10px; }
+        .header h2 { font-size: 32px; font-weight: 800; text-shadow: 1px 1px 2px rgba(255,255,255,0.5); }
+
+        /* 转盘容器 */
+        .wheel-container {
+            position: relative;
+            width: 320px; height: 320px;
+            margin: 20px auto;
+            background: #e64c3c;
+            border-radius: 50%;
+            padding: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            border: 4px solid #ffeb3b;
+        }
+        .wheel-container::after {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            border-radius: 50%; border: 2px dashed #fff;
+            animation: flash 1s infinite; pointer-events: none;
+        }
+        @keyframes flash { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+
+        /* 转盘 */
+        .wheel {
+            width: 100%; height: 100%;
+            background: #fffdf0; border-radius: 50%;
+            position: relative; overflow: hidden;
+            transition: transform 4s cubic-bezier(0.2, 0.8, 0.3, 1);
+        }
+        .wheel-bg {
+            width: 100%; height: 100%; border-radius: 50%;
+            background: conic-gradient(
+                #fffdf0 0deg 60deg, #ffe0b2 60deg 120deg,
+                #fffdf0 120deg 180deg, #ffe0b2 180deg 240deg,
+                #fffdf0 240deg 300deg, #ffe0b2 300deg 360deg
+            );
+        }
+        .prize-item {
+            position: absolute; top: 0; left: 50%;
+            width: 100px; height: 50%; margin-left: -50px;
+            transform-origin: bottom center; text-align: center;
+            padding-top: 20px; font-size: 12px; color: #d35400; font-weight: bold;
+        }
+        .item-1 { transform: rotate(30deg); }
+        .item-2 { transform: rotate(90deg); }
+        .item-3 { transform: rotate(150deg); }
+        .item-4 { transform: rotate(210deg); }
+        .item-5 { transform: rotate(270deg); }
+        .item-6 { transform: rotate(330deg); }
+        .prize-icon { display: block; width: 30px; height: 30px; background: #ddd; margin: 5px auto; border-radius: 4px; line-height: 30px; font-size: 10px; color: #666; }
+
+        /* 指针按钮 */
+        .pointer {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80px; height: 80px;
+            background: linear-gradient(to bottom, #ffcc00, #ff9900);
+            border-radius: 50%; border: 4px solid #fff;
+            box-shadow: 0 4px 0 #cc7a00;
+            z-index: 10; display: flex; justify-content: center; align-items: center;
+            font-size: 20px; font-weight: bold; color: #d35400; cursor: pointer;
+        }
+        .pointer::before {
+            content: ''; position: absolute; top: -20px; left: 50%;
+            transform: translateX(-50%);
+            border-width: 15px; border-style: solid;
+            border-color: transparent transparent #ffcc00 transparent;
+        }
+        .pointer:active { transform: translate(-50%, -48%); box-shadow: 0 2px 0 #cc7a00; }
+        
+        /* 禁用状态的指针 */
+        .pointer.disabled {
+            background: #ccc;
+            box-shadow: 0 4px 0 #999;
+            color: #666;
+            cursor: not-allowed;
+        }
+        .pointer.disabled::before { border-bottom-color: #ccc; }
+
+        /* 底部名单 */
+        .footer-list {
+            width: 90%; background: rgba(255, 255, 255, 0.3);
+            border-radius: 10px; padding: 10px; margin-top: 10px;
+            text-align: center; z-index: 5; height: 150px; /* 固定高度 */
+            display: flex; flex-direction: column;
+        }
+        .list-title { color: #fff; font-size: 14px; margin-bottom: 8px; font-weight: bold; flex-shrink: 0;}
+        .marquee-container {
+            flex: 1; overflow-y: auto; /* 允许滚动 */
+            position: relative;
+            -webkit-overflow-scrolling: touch;
+        }
+        /* 隐藏滚动条但保留功能 */
+        .marquee-container::-webkit-scrollbar { width: 4px; }
+        .marquee-container::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.5); border-radius: 2px; }
+
+        .record-item {
+            color: #fff; font-size: 12px; line-height: 24px;
+            border-bottom: 1px dashed rgba(255,255,255,0.2);
+        }
+        .record-item b { color: #d93600; background: rgba(255,255,255,0.6); padding: 0 4px; border-radius: 4px; margin: 0 2px;}
+        .record-time { font-size: 10px; color: #eee; margin-left: 5px; opacity: 0.8; }
+
+        /* 城市背景 */
+        .city-bg {
+            position: fixed; bottom: 0; width: 100%; height: 60px;
+            background-color: #e67e22;
+            mask-image: linear-gradient(to top, black, transparent);
+            -webkit-mask-image: linear-gradient(to top, black, transparent);
+            opacity: 0.5; z-index: 0;
+        }
+
+        /* 弹窗 */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); z-index: 100; display: none;
+            justify-content: center; align-items: center;
+        }
+        .modal-box {
+            background: #fff; width: 80%; max-width: 300px; padding: 20px;
+            border-radius: 15px; text-align: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            animation: popIn 0.3s;
+        }
+        @keyframes popIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .modal-title { font-size: 18px; color: #333; margin-bottom: 15px; font-weight: bold; }
+        .modal-input { width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; margin-bottom: 15px; outline: none; }
+        .modal-input:focus { border-color: #ff9900; }
+        .modal-btn {
+            background: linear-gradient(to right, #ff9900, #ff5e00);
+            color: white; border: none; padding: 10px 30px; border-radius: 20px;
+            font-size: 16px; cursor: pointer; box-shadow: 0 4px 10px rgba(255, 94, 0, 0.3);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 姓名输入弹窗 -->
+    <div class="modal-overlay" id="nameModal">
+        <div class="modal-box">
+            <div class="modal-title">请输入您的姓名</div>
+            <input type="text" class="modal-input" id="usernameInput" placeholder="例如：李四" maxlength="10">
+            <button class="modal-btn" onclick="submitName()">开始抽奖</button>
+        </div>
+    </div>
+
+    <div class="header">
+        <h1>探探</h1>
+        <h2>探探5周年<br>拉人大抽奖</h2>
+    </div>
+
+    <div class="wheel-container">
+        <div class="wheel" id="wheel">
+            <div class="wheel-bg"></div>
+            <div class="prize-item item-1"><span>纪梵希<br>小羊皮口红</span><span class="prize-icon">💄</span></div>
+            <div class="prize-item item-2"><span>ARMANI<br>阿玛尼</span><span class="prize-icon">🎁</span></div>
+            <div class="prize-item item-3"><span>探探<br>VIP会员</span><span class="prize-icon">👑</span></div>
+            <div class="prize-item item-4"><span>iPhone<br>XS</span><span class="prize-icon">📱</span></div>
+            <div class="prize-item item-5"><span>圣罗兰<br>口红</span><span class="prize-icon">💄</span></div>
+            <div class="prize-item item-6"><span>谢谢<br>参与</span><span class="prize-icon">😊</span></div>
+        </div>
+
+        <!-- 按钮增加ID以便控制 -->
+        <div class="pointer" id="drawBtn" onclick="checkUserAndSpin()">
+            抽奖
+        </div>
+    </div>
+
+    <div class="footer-list">
+        <div class="list-title">—— 中奖名单 (实时更新) ——</div>
+        <div class="marquee-container" id="marqueeList">
+            <!-- 列表将由JS加载 -->
+        </div>
+    </div>
+
+    <div class="city-bg"></div>
+
+    <script>
+        // --- 配置与状态 ---
+        const STORAGE_KEY_RECORDS = 'lottery_records_v1';
+        const STORAGE_KEY_LAST_DATE = 'lottery_last_date_v1';
+        
+        let isSpinning = false;
+        let currentRotation = 0;
+        let currentUser = "";
+
+        // --- 初始化 ---
+        window.onload = function() {
+            renderRecords();
+            checkDailyStatus();
+        };
+
+        // 1. 检查今日是否已抽奖
+        function checkDailyStatus() {
+            const lastDate = localStorage.getItem(STORAGE_KEY_LAST_DATE);
+            const today = new Date().toLocaleDateString();
+            const btn = document.getElementById('drawBtn');
+
+            if (lastDate === today) {
+                btn.classList.add('disabled');
+                btn.innerText = "已抽";
+                return false; // 禁止抽奖
+            } else {
+                btn.classList.remove('disabled');
+                btn.innerText = "抽奖";
+                return true; // 允许抽奖
+            }
+        }
+
+        // 2. 渲染中奖记录 (合并默认数据和本地存储数据)
+        function renderRecords() {
+            const listContainer = document.getElementById('marqueeList');
+            listContainer.innerHTML = ''; // 清空
+
+            // 获取本地存储的记录
+            let localRecords = JSON.parse(localStorage.getItem(STORAGE_KEY_RECORDS) || "[]");
+
+            // 默认虚拟数据 (为了看起来不空)
+            const defaultRecords = [
+                { name: "180****0182", prize: "iPhone XS", time: "2023/10/01" },
+                { name: "183****1143", prize: "圣罗兰口红", time: "2023/10/02" },
+                { name: "138****8888", prize: "探探VIP会员", time: "2023/10/03" }
+            ];
+
+            // 合并：新记录在最前面
+            const allRecords = [...localRecords.reverse(), ...defaultRecords];
+
+            allRecords.forEach(rec => {
+                const div = document.createElement('div');
+                div.className = 'record-item';
+                // 如果没有时间字段，就不显示时间
+                const timeStr = rec.time ? `<span class="record-time">${rec.time}</span>` : '';
+                div.innerHTML = `恭喜 <b>${rec.name}</b> 获得 ${rec.prize} ${timeStr}`;
+                listContainer.appendChild(div);
+            });
+        }
+
+        // 3. 点击抽奖前置检查
+        function checkUserAndSpin() {
+            if (isSpinning) return;
+
+            // 再次检查日期限制
+            if (!checkDailyStatus()) {
+                alert("您今天已经抽过奖了，请明天再来！");
+                return;
+            }
+            
+            if (!currentUser) {
+                document.getElementById('nameModal').style.display = 'flex';
+                setTimeout(() => document.getElementById('usernameInput').focus(), 100);
+            } else {
+                startLottery();
+            }
+        }
+
+        function submitName() {
+            const input = document.getElementById('usernameInput');
+            const name = input.value.trim();
+            if (!name) { alert("请输入姓名"); return; }
+            currentUser = name;
+            document.getElementById('nameModal').style.display = 'none';
+            startLottery();
+        }
+
+        // 4. 核心抽奖逻辑
+        function startLottery() {
+            if (isSpinning) return;
+            isSpinning = true;
+
+            const wheel = document.getElementById('wheel');
+            const baseSpins = 1800; 
+            const randomOffset = Math.floor(Math.random() * 360);
+            currentRotation += (baseSpins + randomOffset);
+            wheel.style.transform = `rotate(${currentRotation}deg)`;
+
+            setTimeout(() => {
+                isSpinning = false;
+                
+                // 计算结果
+                const actualDeg = currentRotation % 360;
+                let pointingDeg = 360 - actualDeg;
+                if (pointingDeg === 360) pointingDeg = 0;
+
+                let prize = "";
+                if (pointingDeg >= 0 && pointingDeg < 60) prize = "纪梵希小羊皮口红";
+                else if (pointingDeg >= 300 && pointingDeg < 360) prize = "ARMANI阿玛尼";
+                else if (pointingDeg >= 240 && pointingDeg < 300) prize = "探探VIP会员";
+                else if (pointingDeg >= 180 && pointingDeg < 240) prize = "iPhone XS";
+                else if (pointingDeg >= 120 && pointingDeg < 180) prize = "圣罗兰口红";
+                else if (pointingDeg >= 60 && pointingDeg < 120) prize = "谢谢参与";
+
+                // 处理结果
+                handleResult(prize);
+
+            }, 4000);
+        }
+
+        // 5. 结果处理与保存
+        function handleResult(prize) {
+            alert(`🎉 结果揭晓：\n${prize}`);
+
+            // 记录今日已抽
+            const today = new Date().toLocaleDateString();
+            localStorage.setItem(STORAGE_KEY_LAST_DATE, today);
+            
+            // 更新按钮状态
+            checkDailyStatus();
+
+            // 如果不是“谢谢参与”，则保存到中奖名单
+            if (prize !== "谢谢参与") {
+                const newRecord = {
+                    name: currentUser,
+                    prize: prize,
+                    time: new Date().toLocaleTimeString() // 记录具体时间
+                };
+
+                // 读取旧数据 -> 插入新数据 -> 保存
+                let records = JSON.parse(localStorage.getItem(STORAGE_KEY_RECORDS) || "[]");
+                records.push(newRecord); // 存入数组
+                localStorage.setItem(STORAGE_KEY_RECORDS, JSON.stringify(records));
+
+                // 刷新界面列表
+                renderRecords();
+                
+                // 滚动到顶部查看最新记录
+                document.getElementById('marqueeList').scrollTop = 0;
+            }
+        }
+    </script>
+</body>
+</html>
